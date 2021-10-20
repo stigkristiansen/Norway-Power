@@ -73,7 +73,7 @@ declare(strict_types=1);
 		private function HandleData() {
 			$fetchData = false;
 
-			$data = $this-ReadAttributeString('Day');
+			$data = $this->ReadAttributeString('Day');
 			if(strlen($data)>0) {
 				$day = json_decode($data);
 				
