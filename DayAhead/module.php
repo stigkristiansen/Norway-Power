@@ -82,12 +82,15 @@ declare(strict_types=1);
 				
 				if(!isset($day->date)) {
 					if($day->date!=$today) {
+						$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has old data! Fetching data from Internet', 0);
 						$fetchData = true;						
 					}
 				} else {
+					$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has invalid data! Fetching data from Internet', 0);
 					$fetchData = true;
 				}
-			} else{
+			} else {
+				$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" is empty! Fetching data from Internet', 0);
 				$fetchData = true;
 			}
 
