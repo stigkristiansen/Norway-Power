@@ -73,14 +73,14 @@ declare(strict_types=1);
 		private function HandleData() {
 			$fetchData = false;
 
+			$now = new DateTime('Now');
+			$today = $now->format('Y-m-d');
+
 			$data = $this->ReadAttributeString('Day');
 			if(strlen($data)>0) {
 				$day = json_decode($data);
 				
 				if(!isset($day->date)) {
-					$now = new DateTime('Now');
-					$today = $now->format('Y-m-d');
-
 					if($day->date!=$today) {
 						$fetchData = true;						
 					}
