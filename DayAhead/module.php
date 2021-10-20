@@ -104,6 +104,7 @@ declare(strict_types=1);
 				$data['prices'] = $prices;
 
 				$this->SendDebug(IPS_GetName($this->InstanceID), 'Saving prices...', 0);
+				$this->SendDebug(IPS_GetName($this->InstanceID), json_encode($data), 0);
 				$this->WriteAttributeString('Day', json_encode($data));
 			}
 
