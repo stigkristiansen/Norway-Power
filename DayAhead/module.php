@@ -15,13 +15,26 @@ declare(strict_types=1);
 			
 			$this->RegisterAttributeString('Day', '');
 
+			$this->RegisterProfileFloat('NPDA.Price', 'Dollar', '', ' kr/kWt');
+
 			$this->RegisterTimer('NorwayPowerRefresh' . (string)$this->InstanceID, 0, 'IPS_RequestAction(' . (string)$this->InstanceID . ', "Refresh", 0);'); 
+
+			$this->RegisterVariableFloat('Current', 'Aktuell', 'NPDA.Price', 1);
+			$this->RegisterVariableFloat('Low', 'Lavest', 'NPDA.Price', 2);
+			$this->RegisterVariableFloat('High', 'Høyest', 'NPDA.Price', 3);
+			$this->RegisterVariableFloat('Avg', 'Gjennomsnitt', 'NPDA.Price', 4);
+			$this->RegisterVariableFloat('Median', 'Median', 'NPDA.Price', 5);
 
 			$this->RegisterMessage(0, IPS_KERNELMESSAGE);
 		}
 
 		public function Destroy()
 		{
+			$module = json_decode(file_get_contents(__DIR__ . '/module.json'));
+			if(count(IPS_GetInstanceListByModuleID($module->id))==0) {
+				$this->DeleteProfile('NPDA.Price');	
+			}
+
 			//Never delete this line!
 			parent::Destroy();
 		}
@@ -118,10 +131,10 @@ declare(strict_types=1);
 
 			$stats = $this->GetStats($prices);
 
-			
-			
-			// Update variables
-
+			$this->SetValue('Current', $stats->current);
+			$this->SetValue('High', $stats->high);
+			$this->SetValue('Low', $stats->low);
+			$this->SetValue('Avg', $stats->avg);
 
 		}
 
@@ -129,9 +142,11 @@ declare(strict_types=1);
 			$this->SendDebug(IPS_GetName($this->InstanceID), 'Calculating statistics...', 0);
 			$date = new DateTime('Now');
 			$currentIndex = $date->format('G');
+			
 			$stats = array('current' => (float)$Prices[$currentIndex]);
 			
 			sort($Prices, SORT_NUMERIC);
+			
 			$stats['high'] = (float)$Prices[count($Prices)-1];
 			$stats['low'] = (float)$Prices[0];
 			$stats['avg'] = (float)(array_sum($Prices)/count($Prices));
