@@ -111,6 +111,9 @@ declare(strict_types=1);
 				$this->SendDebug(IPS_GetName($this->InstanceID), 'Saving prices...', 0);
 				$this->SendDebug(IPS_GetName($this->InstanceID), json_encode($data), 0);
 				$this->WriteAttributeString('Day', json_encode($data));
+			} else {
+				$day = json_decode($data);
+				$prices = $day->prices;
 			}
 
 			$stats = $this->GetStats($prices);
