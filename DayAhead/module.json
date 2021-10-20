@@ -1,0 +1,12 @@
+{
+    "id": "{48B35069-4E81-EA49-32BF-BCEFDCC8329C}",
+    "name": "DayAhead",
+    "type": 3,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "NPDA",
+    "url": ""
+}
