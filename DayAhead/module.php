@@ -92,8 +92,8 @@ declare(strict_types=1);
 			}
 
 			if($fetchData){
-				$jsonPrices = $this->GetDayAheadPrices($this->ReadPropertyString('Area'));
-				$receivedPrices = json_decode($jsonPrices);
+				$response = $this->GetDayAheadPrices($this->ReadPropertyString('Area'));
+				$receivedPrices = $response->result;
 
 				$prices = array();
 				foreach($receivedPrices as $price) {
