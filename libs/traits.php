@@ -132,7 +132,7 @@ trait Profiles {
         }
     }
 
-    protected function RegisterProfileFloat($Name, $Icon, $Prefix, $Suffix) {
+    protected function RegisterProfileFloat($Name, $Icon, $Prefix, $Suffix, $Digits=0) {
 
         if (!IPS_VariableProfileExists($Name)) {
             IPS_CreateVariableProfile($Name, 2);
@@ -145,6 +145,7 @@ trait Profiles {
 
         IPS_SetVariableProfileIcon($Name, $Icon);
         IPS_SetVariableProfileText($Name, $Prefix, $Suffix);
+        IPS_SetVariableProfileDigits($Name, $Digits);
     }
 
     protected function CreateProfileAssosiationList($List) {

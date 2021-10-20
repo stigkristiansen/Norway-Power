@@ -19,7 +19,7 @@ class DayAhead extends IPSModule {
 		
 		$this->RegisterAttributeString('Day', '');
 
-		$this->RegisterProfileFloat('NPDA.Price', 'Dollar', '', ' kr/kWt');
+		$this->RegisterProfileFloat('NPDA.Price', 'Dollar', '', ' kr/kWt', 4);
 
 		$this->RegisterTimer('NorwayPowerRefresh' . (string)$this->InstanceID, 0, 'IPS_RequestAction(' . (string)$this->InstanceID . ', "Refresh", 0);'); 
 
