@@ -82,7 +82,7 @@ declare(strict_types=1);
 
 				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Data in attribute "Day" is "%s"', $data), 0);
 				
-				if(!isset($day->date)) {
+				if(isset($day->date)) {
 					if($day->date!=$today) {
 						$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has old data! Fetching data from Internet', 0);
 						$fetchData = true;						
