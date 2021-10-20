@@ -1,212 +1,216 @@
 <?php
 
 declare(strict_types=1);
-	class DayAhead extends IPSModule
+
+include __DIR__ . "/../libs/traits.php";
+
+class DayAhead extends IPSModule {
+	use Profiles;
+
+	const URL = 'https://norway-power.ffail.win';
+
+	public function Create()
 	{
-		const URL = 'https://norway-power.ffail.win';
+		//Never delete this line!
+		parent::Create();
 
-		public function Create()
-		{
-			//Never delete this line!
-			parent::Create();
-
-			$this->RegisterPropertyString('Area', 'NO1');
-			$this->RegisterPropertyBoolean('SkipSSLCheck', false);
-			
-			$this->RegisterAttributeString('Day', '');
-
-			$this->RegisterProfileFloat('NPDA.Price', 'Dollar', '', ' kr/kWt');
-
-			$this->RegisterTimer('NorwayPowerRefresh' . (string)$this->InstanceID, 0, 'IPS_RequestAction(' . (string)$this->InstanceID . ', "Refresh", 0);'); 
-
-			$this->RegisterVariableFloat('Current', 'Aktuell', 'NPDA.Price', 1);
-			$this->RegisterVariableFloat('Low', 'Lavest', 'NPDA.Price', 2);
-			$this->RegisterVariableFloat('High', 'Høyest', 'NPDA.Price', 3);
-			$this->RegisterVariableFloat('Avg', 'Gjennomsnitt', 'NPDA.Price', 4);
-			$this->RegisterVariableFloat('Median', 'Median', 'NPDA.Price', 5);
-
-			$this->RegisterMessage(0, IPS_KERNELMESSAGE);
-		}
-
-		public function Destroy()
-		{
-			$module = json_decode(file_get_contents(__DIR__ . '/module.json'));
-			if(count(IPS_GetInstanceListByModuleID($module->id))==0) {
-				$this->DeleteProfile('NPDA.Price');	
-			}
-
-			//Never delete this line!
-			parent::Destroy();
-		}
-
-		public function ApplyChanges()
-		{
-			//Never delete this line!
-			parent::ApplyChanges();
-
-			if (IPS_GetKernelRunlevel() == KR_READY) {
-				$this->InitTimer();
-			}
-
-			$this->HandleData();
-
-		}
-
-		public function MessageSink($TimeStamp, $SenderID, $Message, $Data) {
-			parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
-
-			if ($Message == IPS_KERNELMESSAGE && $Data[0] == KR_READY) {
-				$this->InitTimer();
-			}
-		}
-
-		public function RequestAction($Ident, $Value) {
-			try {
-				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('ReqestAction called for Ident "%s" with Value %s', $Ident, (string)$Value), 0);
-	
-				switch (strtolower($Ident)) {
-					case 'refresh':
-						$this->Refresh();						
-						break;
-					default:
-						throw new Exception(sprintf('ReqestAction called with unkown Ident "%s"', $Ident));
-				}
-			} catch(Exception $e) {
-				$this->LogMessage(sprintf('RequestAction failed. The error was "%s"',  $e->getMessage()), KL_ERROR);
-				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('RequestAction failed. The error was "%s"', $e->getMessage()), 0);
-			}
-		}
-
-		private function Refresh() {
-			$this->SetTimerInterval('NorwayPowerRefresh' . (string)$this->InstanceID, 3600*1000);
-
-			$this->HandleData();
-		}
+		$this->RegisterPropertyString('Area', 'NO1');
+		$this->RegisterPropertyBoolean('SkipSSLCheck', false);
 		
-		private function HandleData() {
-			$fetchData = false;
+		$this->RegisterAttributeString('Day', '');
 
-			$now = new DateTime('Now');
-			$today = $now->format('Y-m-d');
+		$this->RegisterProfileFloat('NPDA.Price', 'Dollar', '', ' kr/kWt');
 
-			$data = $this->ReadAttributeString('Day');
-			if(strlen($data)>0) {
-				$day = json_decode($data);
+		$this->RegisterTimer('NorwayPowerRefresh' . (string)$this->InstanceID, 0, 'IPS_RequestAction(' . (string)$this->InstanceID . ', "Refresh", 0);'); 
 
-				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Data in attribute "Day" is "%s"', $data), 0);
-				
-				if(isset($day->date)) {
-					if($day->date!=$today) {
-						$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has old data! Fetching data from Internet', 0);
-						$fetchData = true;						
-					}
-				} else {
-					$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has invalid data! Fetching data from Internet', 0);
-					$fetchData = true;
-				}
-			} else {
-				$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" is empty! Fetching data from Internet', 0);
-				$fetchData = true;
-			}
+		$this->RegisterVariableFloat('Current', 'Aktuell', 'NPDA.Price', 1);
+		$this->RegisterVariableFloat('Low', 'Lavest', 'NPDA.Price', 2);
+		$this->RegisterVariableFloat('High', 'Høyest', 'NPDA.Price', 3);
+		$this->RegisterVariableFloat('Avg', 'Gjennomsnitt', 'NPDA.Price', 4);
+		$this->RegisterVariableFloat('Median', 'Median', 'NPDA.Price', 5);
 
-			if($fetchData){
-				$response = $this->GetDayAheadPrices($this->ReadPropertyString('Area'));
-				$receivedPrices = $response->result;
+		$this->RegisterMessage(0, IPS_KERNELMESSAGE);
+	}
 
-				$prices = array();
-				foreach($receivedPrices as $price) {
-					$prices[] = (float)$price->NOK_per_kWh;
-				}
-
-				$data = array('date' => $today);
-				$data['prices'] = $prices;
-
-				$this->SendDebug(IPS_GetName($this->InstanceID), 'Saving prices...', 0);
-				$this->SendDebug(IPS_GetName($this->InstanceID), json_encode($data), 0);
-				$this->WriteAttributeString('Day', json_encode($data));
-			} else {
-				$day = json_decode($data);
-				$prices = $day->prices;
-			}
-
-			$stats = $this->GetStats($prices);
-
-			$this->SetValue('Current', $stats->current);
-			$this->SetValue('High', $stats->high);
-			$this->SetValue('Low', $stats->low);
-			$this->SetValue('Avg', $stats->avg);
-
+	public function Destroy()
+	{
+		$module = json_decode(file_get_contents(__DIR__ . '/module.json'));
+		if(count(IPS_GetInstanceListByModuleID($module->id))==0) {
+			$this->DeleteProfile('NPDA.Price');	
 		}
 
-		private function GetStats($Prices) {
-			$this->SendDebug(IPS_GetName($this->InstanceID), 'Calculating statistics...', 0);
-			$date = new DateTime('Now');
-			$currentIndex = $date->format('G');
-			
-			$stats = array('current' => (float)$Prices[$currentIndex]);
-			
-			sort($Prices, SORT_NUMERIC);
-			
-			$stats['high'] = (float)$Prices[count($Prices)-1];
-			$stats['low'] = (float)$Prices[0];
-			$stats['avg'] = (float)(array_sum($Prices)/count($Prices));
+		//Never delete this line!
+		parent::Destroy();
+	}
 
-			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Calculated statistics: %s', json_encode($stats)), 0);
+	public function ApplyChanges()
+	{
+		//Never delete this line!
+		parent::ApplyChanges();
 
-			return (object)$stats;
-			
+		if (IPS_GetKernelRunlevel() == KR_READY) {
+			$this->InitTimer();
 		}
 
-		private function InitTimer() {
-			$this->SetTimerInterval('NorwayPowerRefresh' . (string)$this->InstanceID, (self::SecondsToNextHour()+2)*1000); 
-		}
+		$this->HandleData();
 
-		private function SecondsToNextHour() {
-			$date = new DateTime('Now');
-			$secSinceHour = $date->getTimestamp() % 3600; 
-			return (3600 - $secSinceHour);
-		}
+	}
 
-		private function GetDayAheadPrices(string $Area, $Date=null ) {
-			$ch = curl_init();
+	public function MessageSink($TimeStamp, $SenderID, $Message, $Data) {
+		parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
-			$skipSSLCheck = $this->ReadPropertyBoolean('SkipSSLCheck');
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, !$skipSSLCheck?0:2);//
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, !$skipSSLCheck);
-
-			if($Date==null) {
-				$date = new DateTime('Now');
-			} else {
-				$date = $Date;
-			}
-
-			$params = array('zone' => $this->ReadPropertyString('Area'));
-			$params['date'] = $date->Format('Y-m-d');
-		
-			$url =  Self::URL . '?'  . http_build_query($params);
-			curl_setopt($ch, CURLOPT_URL, $url);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true );
-						
-			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Fetching prices. Url is "%s"', $url), 0);
-
-			$result = curl_exec($ch);
-
-			$response = array('httpcode' => curl_getinfo($ch, CURLINFO_RESPONSE_CODE));
-			
-			if($result===false) {
-				$response['success'] = false;
-				$response['errortext'] = curl_error($ch);
-
-				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Failed to retrieve prices. The error was %s: %s', $response['httpcode'], $responce['errortext'] ), 0);
-
-				return (object)$response;
-			} 
-			
-			$response ['success'] = true;
-			$response['result'] = json_decode($result) ;
-
-			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Got prices: %s', $result), 0);
-			
-			return  (object)$response;
+		if ($Message == IPS_KERNELMESSAGE && $Data[0] == KR_READY) {
+			$this->InitTimer();
 		}
 	}
+
+	public function RequestAction($Ident, $Value) {
+		try {
+			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('ReqestAction called for Ident "%s" with Value %s', $Ident, (string)$Value), 0);
+
+			switch (strtolower($Ident)) {
+				case 'refresh':
+					$this->Refresh();						
+					break;
+				default:
+					throw new Exception(sprintf('ReqestAction called with unkown Ident "%s"', $Ident));
+			}
+		} catch(Exception $e) {
+			$this->LogMessage(sprintf('RequestAction failed. The error was "%s"',  $e->getMessage()), KL_ERROR);
+			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('RequestAction failed. The error was "%s"', $e->getMessage()), 0);
+		}
+	}
+
+	private function Refresh() {
+		$this->SetTimerInterval('NorwayPowerRefresh' . (string)$this->InstanceID, 3600*1000);
+
+		$this->HandleData();
+	}
+	
+	private function HandleData() {
+		$fetchData = false;
+
+		$now = new DateTime('Now');
+		$today = $now->format('Y-m-d');
+
+		$data = $this->ReadAttributeString('Day');
+		if(strlen($data)>0) {
+			$day = json_decode($data);
+
+			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Data in attribute "Day" is "%s"', $data), 0);
+			
+			if(isset($day->date)) {
+				if($day->date!=$today) {
+					$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has old data! Fetching data from Internet', 0);
+					$fetchData = true;						
+				}
+			} else {
+				$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has invalid data! Fetching data from Internet', 0);
+				$fetchData = true;
+			}
+		} else {
+			$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" is empty! Fetching data from Internet', 0);
+			$fetchData = true;
+		}
+
+		if($fetchData){
+			$response = $this->GetDayAheadPrices($this->ReadPropertyString('Area'));
+			$receivedPrices = $response->result;
+
+			$prices = array();
+			foreach($receivedPrices as $price) {
+				$prices[] = (float)$price->NOK_per_kWh;
+			}
+
+			$data = array('date' => $today);
+			$data['prices'] = $prices;
+
+			$this->SendDebug(IPS_GetName($this->InstanceID), 'Saving prices...', 0);
+			$this->SendDebug(IPS_GetName($this->InstanceID), json_encode($data), 0);
+			$this->WriteAttributeString('Day', json_encode($data));
+		} else {
+			$day = json_decode($data);
+			$prices = $day->prices;
+		}
+
+		$stats = $this->GetStats($prices);
+
+		$this->SetValue('Current', $stats->current);
+		$this->SetValue('High', $stats->high);
+		$this->SetValue('Low', $stats->low);
+		$this->SetValue('Avg', $stats->avg);
+
+	}
+
+	private function GetStats($Prices) {
+		$this->SendDebug(IPS_GetName($this->InstanceID), 'Calculating statistics...', 0);
+		$date = new DateTime('Now');
+		$currentIndex = $date->format('G');
+		
+		$stats = array('current' => (float)$Prices[$currentIndex]);
+		
+		sort($Prices, SORT_NUMERIC);
+		
+		$stats['high'] = (float)$Prices[count($Prices)-1];
+		$stats['low'] = (float)$Prices[0];
+		$stats['avg'] = (float)(array_sum($Prices)/count($Prices));
+
+		$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Calculated statistics: %s', json_encode($stats)), 0);
+
+		return (object)$stats;
+		
+	}
+
+	private function InitTimer() {
+		$this->SetTimerInterval('NorwayPowerRefresh' . (string)$this->InstanceID, (self::SecondsToNextHour()+2)*1000); 
+	}
+
+	private function SecondsToNextHour() {
+		$date = new DateTime('Now');
+		$secSinceHour = $date->getTimestamp() % 3600; 
+		return (3600 - $secSinceHour);
+	}
+
+	private function GetDayAheadPrices(string $Area, $Date=null ) {
+		$ch = curl_init();
+
+		$skipSSLCheck = $this->ReadPropertyBoolean('SkipSSLCheck');
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, !$skipSSLCheck?0:2);//
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, !$skipSSLCheck);
+
+		if($Date==null) {
+			$date = new DateTime('Now');
+		} else {
+			$date = $Date;
+		}
+
+		$params = array('zone' => $this->ReadPropertyString('Area'));
+		$params['date'] = $date->Format('Y-m-d');
+	
+		$url =  Self::URL . '?'  . http_build_query($params);
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true );
+					
+		$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Fetching prices. Url is "%s"', $url), 0);
+
+		$result = curl_exec($ch);
+
+		$response = array('httpcode' => curl_getinfo($ch, CURLINFO_RESPONSE_CODE));
+		
+		if($result===false) {
+			$response['success'] = false;
+			$response['errortext'] = curl_error($ch);
+
+			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Failed to retrieve prices. The error was %s: %s', $response['httpcode'], $responce['errortext'] ), 0);
+
+			return (object)$response;
+		} 
+		
+		$response ['success'] = true;
+		$response['result'] = json_decode($result) ;
+
+		$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Got prices: %s', $result), 0);
+		
+		return  (object)$response;
+	}
+}
