@@ -92,7 +92,7 @@ declare(strict_types=1);
 			}
 
 			if($fetchData){
-				$jsonPrices = GetDayAheadPrices($this->ReadPropertyString('Area'));
+				$jsonPrices = $this->GetDayAheadPrices($this->ReadPropertyString('Area'));
 				$receivedPrices = json_decode($jsonPrices);
 
 				$prices = array();
