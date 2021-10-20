@@ -96,7 +96,7 @@ declare(strict_types=1);
 				$receivedPrices = json_decode($jsonPrices);
 
 				$prices = array();
-				foreach($receivedPrices => $price) {
+				foreach($receivedPrices as $price) {
 					$prices[] = (float)$price->NOK_per_kWh;
 				}
 
