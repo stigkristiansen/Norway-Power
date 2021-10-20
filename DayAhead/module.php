@@ -157,7 +157,7 @@ declare(strict_types=1);
 			$response = array('httpcode' => curl_getinfo($ch, CURLINFO_RESPONSE_CODE));
 			
 			if($result===false) {
-				$response['success'] = false);
+				$response['success'] = false;
 				$response['errortext'] = curl_error($ch);
 
 				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Failed to retrieve prices. The error was %s: %s', $response['httpcode'], $responce['errortext'] ), 0);
@@ -165,7 +165,7 @@ declare(strict_types=1);
 				return (object)$response;
 			} 
 			
-			$response ['success'] = true);
+			$response ['success'] = true;
 			$response['result'] = json_decode($result) ;
 
 			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Got prices: %s', $result), 0);
