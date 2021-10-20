@@ -3,7 +3,7 @@
 declare(strict_types=1);
 	class DayAhead extends IPSModule
 	{
-		const $URL = 'https://norway-power.ffail.win';
+		const URL = 'https://norway-power.ffail.win';
 
 		public function Create()
 		{
