@@ -77,11 +77,11 @@ declare(strict_types=1);
 			if(strlen($data)>0) {
 				$day = json_decode($data);
 				
-				if(!isset($data->date)) {
+				if(!isset($day->date)) {
 					$now = new DateTime('Now');
 					$today = $now->format('Y-m-d');
 
-					if($data->date!=$today) {
+					if($day->date!=$today) {
 						$fetchData = true;						
 					}
 				} else {
