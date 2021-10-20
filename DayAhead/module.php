@@ -139,6 +139,7 @@ class DayAhead extends IPSModule {
 		$this->SetValue('High', $stats->high);
 		$this->SetValue('Low', $stats->low);
 		$this->SetValue('Avg', $stats->avg);
+		$this->SetValue('Median', $stats->median);
 
 	}
 
@@ -154,6 +155,11 @@ class DayAhead extends IPSModule {
 		$stats['high'] = (float)$Prices[count($Prices)-1];
 		$stats['low'] = (float)$Prices[0];
 		$stats['avg'] = (float)(array_sum($Prices)/count($Prices));
+
+		$count = count($Prices);
+		$index = floor($count/2);
+
+		$stats['median'] = $count%2==0?(float)($Prices[$index-1]+$Prices[$index])/2:(float)$Prices[$index];
 
 		$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Calculated statistics: %s', json_encode($stats)), 0);
 
