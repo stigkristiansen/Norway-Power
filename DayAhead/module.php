@@ -67,7 +67,7 @@ declare(strict_types=1);
 		private function Refresh() {
 			$this->SetTimerInterval('NorwayPowerRefresh' . (string)$this->InstanceID, 3600*1000);
 
-			HandleData();
+			$this->HandleData();
 		}
 		
 		private function HandleData() {
@@ -114,6 +114,8 @@ declare(strict_types=1);
 			}
 
 			$stats = $this->GetStats($prices);
+
+			
 			
 			// Update variables
 
@@ -122,7 +124,18 @@ declare(strict_types=1);
 
 		private function GetStats($Prices) {
 			$this->SendDebug(IPS_GetName($this->InstanceID), 'Calculating statistics...', 0);
-			return '';
+			$date = new DateTime('Now');
+			$currentIndex = $date->format('G');
+			$stats = array('current' => (float)$Prices[$currentIndex]);
+			
+			sort($Prices, SORT_NUMERIC);
+			$stats['high'] = (float)$Prices[count($Prices)-1];
+			$stats['low'] = (float)$Prices[0];
+			$stats['avg'] = (float)(array_sum($Prices)/count($Prices));
+
+			$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Calculated statistics: %s', json_encode($stats)), 0);
+
+			return (object)$stats;
 			
 		}
 
