@@ -95,7 +95,7 @@ declare(strict_types=1);
 				$jsonPrices = GetDayAheadPrices($this->ReadPropertyString('Area'));
 				$receivedPrices = json_decode($jsonPrices);
 
-				$prices = array()
+				$prices = array();
 				foreach($receivedPrices => $price) {
 					$prices[] = (float)$price->NOK_per_kWh;
 				}
