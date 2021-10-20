@@ -79,6 +79,8 @@ declare(strict_types=1);
 			$data = $this->ReadAttributeString('Day');
 			if(strlen($data)>0) {
 				$day = json_decode($data);
+
+				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Data in attribute "Day" is "%s"', $data), 0);
 				
 				if(!isset($day->date)) {
 					if($day->date!=$today) {
