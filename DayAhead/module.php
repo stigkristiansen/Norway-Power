@@ -77,11 +77,11 @@ declare(strict_types=1);
 			if(strlen($data)>0) {
 				$day = json_decode($data);
 				
-				if(!isset($data->"date")) {
+				if(!isset($data->date)) {
 					$now = new DateTime('Now');
 					$today = $now->format('Y-m-d');
 
-					if($data->"date"!=$today) {
+					if($data->date!=$today) {
 						$fetchData = true;						
 					}
 				} else {
@@ -97,7 +97,7 @@ declare(strict_types=1);
 
 				$prices = array()
 				foreach($receivedPrices => $price) {
-					$prices[] = (float)$price->'NOK_per_kWh';
+					$prices[] = (float)$price->NOK_per_kWh;
 				}
 
 				$data = array('date' => $today);
@@ -115,6 +115,7 @@ declare(strict_types=1);
 		}
 
 		private function GetStats($Prices) {
+			$this->SendDebug(IPS_GetName($this->InstanceID), 'Calculating statistics...', 0);
 			return '';
 			
 		}
