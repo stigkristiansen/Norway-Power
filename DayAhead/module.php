@@ -123,7 +123,7 @@ class DayAhead extends IPSModule {
 					$prices[] = (float)$price->NOK_per_kWh;
 				}
 
-				if(count($prices)=24) {
+				if(count($prices)==24) {
 					$data = array('date' => $today);
 					$data['prices'] = $prices;
 
