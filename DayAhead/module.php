@@ -101,35 +101,51 @@ class DayAhead extends IPSModule {
 			
 			if(isset($day->date)) {
 				if($day->date!=$today) {
-					$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has old data! Fetching data from Internet', 0);
+					$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has old data! Fetching new data', 0);
 					$fetchData = true;						
 				}
 			} else {
-				$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has invalid data! Fetching data from Internet', 0);
+				$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" has invalid data! Fetching new data', 0);
 				$fetchData = true;
 			}
 		} else {
-			$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" is empty! Fetching data from Internet', 0);
+			$this->SendDebug(IPS_GetName($this->InstanceID), 'Attribute "Day" is empty! Fetching new data', 0);
 			$fetchData = true;
 		}
 
 		if($fetchData){
 			$response = $this->GetDayAheadPrices($this->ReadPropertyString('Area'));
-			$receivedPrices = $response->result;
+			if($response->success) {
+				$receivedPrices = $response->result;
 
-			$prices = array();
-			foreach($receivedPrices as $price) {
-				$prices[] = (float)$price->NOK_per_kWh;
+				$prices = array();
+				foreach($receivedPrices as $price) {
+					$prices[] = (float)$price->NOK_per_kWh;
+				}
+
+				if(count($prices)=24) {
+					$data = array('date' => $today);
+					$data['prices'] = $prices;
+
+					$this->SendDebug(IPS_GetName($this->InstanceID), 'Saving prices...', 0);
+					$this->SendDebug(IPS_GetName($this->InstanceID), json_encode($data), 0);
+					$this->WriteAttributeString('Day', json_encode($data));
+				} else {
+					$this->SendDebug(IPS_GetName($this->InstanceID), 'Received invalid data from Internet', 0);
+					return;
+				}
+			} else {
+				$this->SendDebug(IPS_GetName($this->InstanceID), sprintf('Unable to update atttribute "Day". Call failed: %s', $response->errortext), 0);
 			}
-
-			$data = array('date' => $today);
-			$data['prices'] = $prices;
-
-			$this->SendDebug(IPS_GetName($this->InstanceID), 'Saving prices...', 0);
-			$this->SendDebug(IPS_GetName($this->InstanceID), json_encode($data), 0);
-			$this->WriteAttributeString('Day', json_encode($data));
 		} else {
 			$day = json_decode($data);
+			
+			if(!isset($day->prices)) {
+				$this->SendDebug(IPS_GetName($this->InstanceID), 'Atttribute "Day" has invalid data.', 0);
+				$this->WriteAttributeString('Day', '');
+				return;
+			}
+			
 			$prices = $day->prices;
 		}
 
@@ -168,13 +184,13 @@ class DayAhead extends IPSModule {
 	}
 
 	private function InitTimer() {
-		$this->SetTimerInterval('NorwayPowerRefresh' . (string)$this->InstanceID, (self::SecondsToNextHour()+2)*1000); 
+		$this->SetTimerInterval('NorwayPowerRefresh' . (string)$this->InstanceID, (self::SecondsToNextHour()+1)*1000); 
 	}
 
 	private function SecondsToNextHour() {
 		$date = new DateTime('Now');
-		$secSinceHour = $date->getTimestamp() % 3600; 
-		return (3600 - $secSinceHour);
+		$secSinceLastHour = $date->getTimestamp() % 3600; 
+		return (3600 - $secSinceLastHour);
 	}
 
 	private function GetDayAheadPrices(string $Area, $Date=null ) {
