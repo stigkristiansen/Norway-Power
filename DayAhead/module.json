@@ -3,7 +3,7 @@
     "name": "DayAhead",
     "type": 3,
     "vendor": "",
-    "aliases": [],
+    "aliases": ["Day-Ahead priser i Norge"],
     "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],
